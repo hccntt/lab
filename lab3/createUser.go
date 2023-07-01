@@ -7,6 +7,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/google/uuid"
+
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 // BodyRequest is our self-made struct to process JSON request from Client
@@ -17,8 +22,7 @@ type BodyRequest struct {
 }
 
 type DataRequest struct {
-	Value1 *int `json:"value1"`
-	Value2 *int `json:"value2"`
+	Value *int `json:"value"`
 }
 
 // BodyResponse is our self-made struct to build response for Client
@@ -29,7 +33,7 @@ type BodyResponse struct {
 }
 
 type DataResponse struct {
-	Sum int `json:"sum"`
+	Response string `json:"response"`
 }
 
 // Handler function Using AWS Lambda Proxy Request
@@ -59,16 +63,50 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	//verify sum materials
-	if bodyRequest.Data.Value1 == nil || bodyRequest.Data.Value2 == nil {
+	if bodyRequest.Data.Value == nil {
 		return events.APIGatewayProxyResponse{Body: "Value1, Value2 can not be null", StatusCode: 401}, nil
-
 	}
+
+	strData := fmt.Sprintf(`{
+		"requestId":"requestId",
+		"data": {
+			"value": %d
+		}
+	}`, bodyRequest.Data.Value)
+
+	url := "https://1g1zcrwqhj.execute-api.ap-southeast-1.amazonaws.com/dev/testapi"
+	contentType := "text/plain"
+	data := []byte(strData)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		fmt.Println(err)
+		//return
+	}
+	req.Header.Add("Content-Type", contentType)
+	req.Header.Add("x-api-key", "B5d4JtTU8u1ggV8gp7OF88gcCGxZls6T3f5PYZSa")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		//return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		//return
+	}
+
+	//fmt.Println(string(body))
 
 	// We will build the BodyResponse and send it back in json form
 	bodyResponse := BodyResponse{
 		ResponseId:   uuid.New().String(),
 		ResponseTime: datetime.Format(time.RFC3339),
-		Data:         DataResponse{Sum: *bodyRequest.Data.Value1 + *bodyRequest.Data.Value2},
+		Data:         DataResponse{Response: string(body)},
 	}
 
 	// Marshal the response into json bytes, if error return 404
