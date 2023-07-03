@@ -23,17 +23,17 @@ provider:
   runtime: go1.x
 
 plugins:
-  - serverless-add-api-key
+- serverless-add-api-key
 
 custom:
   apiKeys:
     dev:
     - name: baitap1
       usagePlan:
-        name: "baitap1" 
+        name: "baitap1"
         description: "Description of first plan"
         quota:
-          limit: 10000
+          limit: 1000
           period: MONTH
         throttle:
           burstLimit: 100
@@ -68,9 +68,9 @@ custom:
 #    variable1: value1
 
 package:
- individually: true
- exclude:
-   - ./**
+  individually: true
+  exclude:
+  - ./**
 
 functions:
   # get:
@@ -90,32 +90,32 @@ functions:
     handler: bin/lab3
     package:
       include:
-        - ./bin/lab3
+      - ./bin/lab3
     events:
-      - http:
-          path: post
-          method: post
-          private: true
-  # postapi2:
-  #   handler: bin/creatuser
-  #   package:
-  #     include:
-  #       - ./bin/postBinApi2
-  #   events:
-  #     - http:
-  #         path: postapi2
-  #         method: post      
-  #         private: true
-  # postapi3:
-  #   handler: bin/postBinApi3
-  #   package:
-  #     include:
-  #       - ./bin/postBinApi3
-  #   events:
-  #     - http:
-  #         path: postapi3
-  #         method: post          
-  #         private: true
+    - http:
+        path: post
+        method: post
+        private: true
+  createuser:
+  handler: bin/lab2
+  package:
+    include:
+    - ./bin/lab2
+  events:
+  - http:
+      path: createuser
+      method: post
+      private: true
+# postapi3:
+#   handler: bin/postBinApi3
+#   package:
+#     include:
+#       - ./bin/postBinApi3
+#   events:
+#     - http:
+#         path: postapi3
+#         method: post          
+#         private: true
 
 
 #    The following are a few example events you can configure
