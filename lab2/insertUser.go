@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"time"
 
 	"database/sql"
@@ -60,8 +63,21 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		//panic(err.Error())
 		return events.APIGatewayProxyResponse{Body: errDb.Error(), StatusCode: 401}, nil
 	}
-
 	defer db.Close()
+
+	query := "INSERT INTO `users` (`username`, `name`, `phone`) VALUES (?, ?, ?)"
+	insertResult, errI := db.ExecContext(context.Background(), query, "John", "Doe", "33336879879")
+
+	if errI != nil {
+		log.Fatalf("impossible insert users: %s", errI)
+		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("impossible insert: %s", errI), StatusCode: 401}, nil
+	}
+	id, err := insertResult.LastInsertId()
+	if err != nil {
+		log.Fatalf("impossible to retrieve last inserted id: %s", err)
+		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("impossible insert: %s", err), StatusCode: 401}, nil
+	}
+	log.Printf("inserted id: %d", id)
 
 	//verify datetime format RFC3339
 	parsedTime, err := time.Parse(time.RFC3339, bodyRequest.RequestTime)
@@ -72,7 +88,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	//verify sum materials
 	if bodyRequest.Data.Value1 == nil || bodyRequest.Data.Value2 == nil {
 		return events.APIGatewayProxyResponse{Body: "Value1, Value2 can not be null", StatusCode: 401}, nil
-
 	}
 
 	// We will build the BodyResponse and send it back in json form
@@ -80,6 +95,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		ResponseId:   uuid.New().String(),
 		ResponseTime: datetime.Format(time.RFC3339),
 		Data:         DataResponse{Sum: *bodyRequest.Data.Value1 + *bodyRequest.Data.Value2},
+		//Data: DataResponse{Sum: id},
 	}
 
 	// Marshal the response into json bytes, if error return 404
