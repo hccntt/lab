@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"time"
 
+	"database/sql"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/google/uuid"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // BodyRequest is our self-made struct to process JSON request from Client
@@ -49,8 +53,15 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	//verify uuid not null
 	if bodyRequest.RequestId == "" {
 		return events.APIGatewayProxyResponse{Body: "requestId can not be null", StatusCode: 401}, nil
-
 	}
+
+	db, errDb := sql.Open("mysql", "hccntt:hccntt123456@tcp(85.10.205.173:3306)/mysqlfree?charset=utf8mb4&parseTime=True&loc=Local") // user:password@tcp(db-hostname:3306)/mydb -- hccntt:hccntt123456@tcp(85.10.205.173:3306)/mysqlfree?charset=utf8mb4&parseTime=True&loc=Local
+	if errDb != nil {
+		//panic(err.Error())
+		return events.APIGatewayProxyResponse{Body: errDb.Error(), StatusCode: 401}, nil
+	}
+
+	defer db.Close()
 
 	//verify datetime format RFC3339
 	parsedTime, err := time.Parse(time.RFC3339, bodyRequest.RequestTime)
