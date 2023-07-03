@@ -53,7 +53,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	//verify uuid not null
 	if bodyRequest.RequestId == "" {
 		return events.APIGatewayProxyResponse{Body: "requestId can not be null", StatusCode: 401}, nil
-
 	}
 
 	//verify datetime format RFC3339
@@ -93,6 +92,12 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		//return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Non-OK HTTP status: %d", resp.StatusCode)
+		// You may read / inspect response body
+		return events.APIGatewayProxyResponse{Body: msg, StatusCode: 401}, nil
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
