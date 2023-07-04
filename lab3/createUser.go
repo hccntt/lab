@@ -47,23 +47,23 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	// Unmarshal the json, return 404 if error
 	err := json.Unmarshal([]byte(request.Body), &bodyRequest)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 401}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
 
 	//verify uuid not null
 	if bodyRequest.RequestId == "" {
-		return events.APIGatewayProxyResponse{Body: "requestId can not be null", StatusCode: 401}, nil
+		return events.APIGatewayProxyResponse{Body: "requestId can not be null", StatusCode: 400}, nil
 	}
 
 	//verify datetime format RFC3339
 	parsedTime, err := time.Parse(time.RFC3339, bodyRequest.RequestTime)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error() + "parsedTime: " + parsedTime.GoString(), StatusCode: 401}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error() + "parsedTime: " + parsedTime.GoString(), StatusCode: 400}, nil
 	}
 
 	//verify sum materials
 	if bodyRequest.Data.Value == nil {
-		return events.APIGatewayProxyResponse{Body: "Value1, Value2 can not be null", StatusCode: 401}, nil
+		return events.APIGatewayProxyResponse{Body: "Value1, Value2 can not be null", StatusCode: 400}, nil
 	}
 
 	strData := fmt.Sprintf(`{
@@ -93,10 +93,10 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusBadRequest {
 		msg := fmt.Sprintf("Non-OK HTTP status: %d", resp.StatusCode)
 		// You may read / inspect response body
-		return events.APIGatewayProxyResponse{Body: msg, StatusCode: 401}, nil
+		return events.APIGatewayProxyResponse{Body: msg, StatusCode: 400}, nil
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
