@@ -36,6 +36,19 @@ type DataResponse struct {
 	Response string `json:"response"`
 }
 
+type ResponseDataApi struct {
+	ResponseId      string `json:"responseId"`
+	ResponseTime    string `json:"responseTime"`
+	ResponseMessage string `json:"responseMessage"`
+	ResponseCode    string `json:"responseCode"`
+}
+
+type ResponseApi struct {
+	ResponseId   string          `json:"responseId"`
+	ResponseTime string          `json:"responseTime"`
+	Data         ResponseDataApi `json:"data"`
+}
+
 // Handler function Using AWS Lambda Proxy Request
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	datetime := time.Now().UTC()
@@ -108,10 +121,22 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	//fmt.Println(string(body))
 
 	// We will build the BodyResponse and send it back in json form
-	bodyResponse := BodyResponse{
+	// bodyResponse := BodyResponse{
+	// 	ResponseId:   uuid.New().String(),
+	// 	ResponseTime: datetime.Format(time.RFC3339),
+	// 	Data:         DataResponse{Response: string(body)},
+	// }
+	dataApi := ResponseDataApi{}
+	err3 := json.Unmarshal(body, &dataApi)
+
+	if err3 != nil {
+		return events.APIGatewayProxyResponse{Body: err3.Error(), StatusCode: 400}, nil
+	}
+
+	bodyResponse := ResponseApi{
 		ResponseId:   uuid.New().String(),
 		ResponseTime: datetime.Format(time.RFC3339),
-		Data:         DataResponse{Response: string(body)},
+		Data:         dataApi,
 	}
 
 	// Marshal the response into json bytes, if error return 404
