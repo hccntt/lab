@@ -80,11 +80,12 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	strData := fmt.Sprintf(`{
-		"requestId":"requestId",
+		"requestId": "%s",
+		"requestTime": "%s",
 		"data": {
 			"value": %d
 		}
-	}`, bodyRequest.Data.Value)
+	}`, bodyRequest.RequestId, bodyRequest.RequestTime, bodyRequest.Data.Value)
 
 	url := "https://1g1zcrwqhj.execute-api.ap-southeast-1.amazonaws.com/dev/testapi"
 	contentType := "text/plain"
