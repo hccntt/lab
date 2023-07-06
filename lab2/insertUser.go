@@ -46,14 +46,12 @@ type DataResponse struct {
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	datetime := time.Now().UTC()
 	// BodyRequest will be used to take the json response from client and build it
-	bodyRequest := BodyRequest{
-		RequestId: "",
-	}
+	bodyRequest := BodyRequest{}
 
 	// Unmarshal the json, return 404 if error
 	err := json.Unmarshal([]byte(request.Body), &bodyRequest)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+		return events.APIGatewayProxyResponse{Body: "api-insert-error json bodyRequest: " + err.Error(), StatusCode: 400}, nil
 	}
 
 	//verify uuid not null
@@ -71,7 +69,28 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		//panic(err.Error())
 		return events.APIGatewayProxyResponse{Body: errDb.Error(), StatusCode: 400}, nil
 	}
-	//defer db.Close()
+	defer db.Close()
+
+	sqlStatement := "SELECT username FROM users where username = ?"
+
+	dataRow, queryErr := db.Query(sqlStatement, bodyRequest.Data.Username)
+	if queryErr != nil {
+		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("impossible insert: %s", queryErr.Error()), StatusCode: 400}, nil
+	}
+	defer dataRow.Close()
+
+	count := 0
+	for dataRow.Next() {
+		var user string
+		if err := dataRow.Scan(&user); err != nil {
+			fmt.Println(err)
+		}
+		count += 1
+	}
+
+	if count >= 1 {
+		return events.APIGatewayProxyResponse{Body: "Exist data in db", StatusCode: 400}, nil
+	}
 
 	query := "INSERT INTO `users` (`username`, `name`, `phone`) VALUES (?, ?, ?)"
 	insertResult, errI := db.ExecContext(context.Background(), query, bodyRequest.Data.Username, bodyRequest.Data.Name, bodyRequest.Data.Phone)
@@ -87,7 +106,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("impossible insert: %s", err), StatusCode: 400}, nil
 	}
 	log.Printf("inserted id: %d", id)
-	defer db.Close()
+	//defer db.Close()
 	//verify datetime format RFC3339
 	parsedTime, err := time.Parse(time.RFC3339, bodyRequest.RequestTime)
 	if err != nil {
@@ -113,4 +132,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 func main() {
 	lambda.Start(Handler)
+	// Handler(events.APIGatewayProxyRequest{
+	// 	Body: "{\"requestId\":\"fffffff\",\"requestTime\":\"2020-12-31T21:07:14-05:00\",\"data\":{\"username\":\"123nguyenvana\",\"name\":\"a\",\"phone\":\"1\"}}",
+	// })
 }
